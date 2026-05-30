@@ -5,6 +5,12 @@
 [控制台](./iapp/server/src//client/)
 [数据采集](./macmon) 基于最新的https://github.com/vladkens/macmon 修改添加了风扇统计
 
+## 效果展示
+
+<video src="https://github.com/taoya7/mini-watch/raw/master/assets/1.mp4" controls muted width="320"></video>
+
+<video src="https://github.com/taoya7/mini-watch/raw/master/assets/2.mp4" controls muted width="320"></video>
+
 ## 基础环境
 
 ```shell
