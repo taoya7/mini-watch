@@ -662,6 +662,27 @@
   </div>
 </section>
 
+<!-- ========== 服务启动 ========== -->
+<section>
+  <h2>服务启动<span class="sub">后端二进制部署</span></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-head">打包二进制</div>
+      <div class="step-body">
+        根目录执行，产出 macOS arm64 可执行文件 <code class="inline">dist/server-aarch64-apple-darwin</code>。
+        <span class="code">make build-server</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-head">启动服务</div>
+      <div class="step-body">
+        直接运行二进制并指定端口（默认 4600）。
+        <span class="code">./dist/server-aarch64-apple-darwin --port 4600</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script type="text/plain" id="src-settings">{
   "hooks": {
     "SessionStart": [
