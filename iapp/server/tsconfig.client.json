@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "target": "ES2022",
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@client/*": ["./src/client/*"]
+    },
+    "resolveJsonModule": true,
+    "types": ["vite/client", "unplugin-vue-router/client"],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/client/**/*",
+    "src/client/types/*.d.ts"
+  ]
+}

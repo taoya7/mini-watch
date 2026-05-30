@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+front-dist
+*.tsbuildinfo
+
+# Auto-generated types
+src/client/types/auto-imports.d.ts
+src/client/types/components.d.ts
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage
+
+# 运行时产物
+data/

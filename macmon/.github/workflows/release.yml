@@ -1,0 +1,73 @@
+name: release
+
+on:
+  push:
+    tags: 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+
+      - run: rustup update --no-self-update stable && rustup default stable
+      - run: cargo fmt --check
+      - run: cargo build --release --locked
+
+      - name: Check Cargo.toml version matches tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          CARGO_VERSION="v$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')"
+          if [ "$TAG" != "$CARGO_VERSION" ]; then
+            echo "Error: tag ${TAG} does not match Cargo.toml version ${CARGO_VERSION}"
+            exit 1
+          fi
+
+      - name: Check binary version matches tag
+        run: ./target/release/macmon -V | grep "${GITHUB_REF_NAME#v}" || exit 1
+
+      - name: Archiving
+        run: |
+          cp target/release/macmon macmon
+          tar czf macmon-${{ github.ref_name }}.tar.gz readme.md LICENSE macmon
+          ls -lah | grep macmon
+
+      - name: Extract changelog entry
+        run: |
+          VERSION="${{ github.ref_name }}"
+          NOTES=$(awk "/^## ${VERSION}/{found=1; next} /^## /{found=0} found" changelog.md | sed '/^---$/d')
+          if [ -z "$NOTES" ]; then
+            echo "Error: no changelog entry found for ${VERSION}"
+            exit 1
+          fi
+          echo "$NOTES" > release_notes.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.txt
+          files: macmon-${{ github.ref_name }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          homebrew-tap: vladkens/homebrew-tap
+          formula-name: macmon
+          formula-path: macmon.rb
+          commit-message: "{{formulaName}} {{version}}"
+          download-url: https://github.com/vladkens/macmon/releases/download/${{ github.ref_name }}/macmon-${{ github.ref_name }}.tar.gz
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

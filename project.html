@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     project.html · Claude 红绿灯 + Mac 系统信息展示
+     kami parchment design system · 单页项目介绍
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Claude 红绿灯 + Mac 系统信息展示</title>
+<meta name="author" content="mini-watch">
+<meta name="description" content="把 Claude Code 的工作状态变成一盏实体红绿灯，并在手机上实时展示 Mac 的性能与风扇数据。Flutter + Hono/Vue + Rust 四模块全栈项目。">
+<meta name="keywords" content="Claude Code, 红绿灯, 灯语, macmon, Mac 监控, Flutter, Hono, WebSocket">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm 18mm 15mm 18mm;
+    background: #f5f4ed;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --sand:      #e8e6dc;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 15mm 18mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10pt;
+    line-height: 1.45;
+    letter-spacing: 0.3pt;
+  }
+
+  .serif { font-family: var(--serif); }
+
+  /* ========== HEADER ========== */
+  .header {
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    margin-bottom: 14pt;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20pt;
+  }
+  .title-block { flex: 1; }
+  .eyebrow {
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 24pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    margin-bottom: 5pt;
+  }
+  .subtitle {
+    font-size: 11pt;
+    color: var(--olive);
+    line-height: 1.4;
+  }
+  .stack { margin-top: 7pt; }
+  .meta {
+    font-size: 9pt;
+    color: var(--stone);
+    text-align: right;
+    line-height: 1.45;
+    white-space: nowrap;
+  }
+
+  /* ========== METRICS ========== */
+  .metrics {
+    display: flex;
+    gap: 14pt;
+    margin-bottom: 18pt;
+    padding: 4pt 0 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+  }
+  .metric {
+    flex: 1;
+    background: transparent;
+    padding: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 4pt;
+    break-inside: avoid;
+  }
+  .metric-value {
+    font-family: var(--serif);
+    font-size: 20pt;
+    font-weight: 500;
+    color: var(--brand);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.2pt;
+  }
+  .metric-label {
+    font-size: 9pt;
+    color: var(--olive);
+    line-height: 1.3;
+  }
+
+  /* ========== SECTIONS ========== */
+  section { margin-bottom: 16pt; break-inside: avoid; }
+  section:last-of-type { margin-bottom: 0; }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 16pt;
+    font-weight: 500;
+    color: var(--near-black);
+    margin-bottom: 6pt;
+  }
+  h2 .sub {
+    font-size: 9pt;
+    color: var(--stone);
+    font-weight: 400;
+    margin-left: 6pt;
+  }
+
+  p { margin-bottom: 6pt; line-height: 1.45; }
+  p:last-child { margin-bottom: 0; }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+
+  /* ========== 2-column grid ========== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18pt;
+  }
+
+  /* ========== module sub-head ========== */
+  .mod-head {
+    display: flex;
+    align-items: baseline;
+    gap: 6pt;
+    margin-bottom: 3pt;
+  }
+  .mod-path {
+    font-size: 8.5pt;
+    color: var(--stone);
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    letter-spacing: 0;
+  }
+
+  /* ========== 短横线 list ========== */
+  ul.dash { list-style: none; margin: 0; padding: 0; }
+  ul.dash li {
+    position: relative;
+    padding-left: 14pt;
+    margin-bottom: 4pt;
+    line-height: 1.45;
+  }
+  ul.dash li::before {
+    content: "\2013";
+    position: absolute;
+    left: 0;
+    color: var(--brand);
+  }
+
+  /* ========== Timeline (横向数据流) ========== */
+  .timeline {
+    display: flex;
+    gap: 12pt;
+    margin-top: 6pt;
+  }
+  .tl-step { flex: 1; break-inside: avoid; }
+  .tl-year {
+    font-family: var(--serif);
+    font-size: 11pt;
+    font-weight: 500;
+    color: var(--brand);
+    margin-bottom: 2pt;
+  }
+  .tl-head {
+    font-size: 10pt;
+    font-weight: 500;
+    color: var(--near-black);
+    margin-bottom: 2pt;
+  }
+  .tl-body {
+    font-size: 9pt;
+    color: var(--olive);
+    line-height: 1.4;
+  }
+
+  /* ========== Env table ========== */
+  .env-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin-top: 4pt;
+  }
+  .env-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 4pt 8pt;
+    border-bottom: 1pt solid var(--border);
+  }
+  .env-table td {
+    padding: 4pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: middle;
+  }
+  .env-table tr:last-child td { border-bottom: none; }
+  .env-tool { font-weight: 500; color: var(--near-black); white-space: nowrap; }
+  .ver {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 9pt;
+    color: var(--brand);
+    background: var(--tag-bg);
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .env-note { font-size: 8.5pt; color: var(--stone); }
+
+  /* ========== Tag ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-size: 8.5pt;
+    font-weight: 500;
+    padding: 1pt 5pt;
+    border-radius: 3pt;
+    letter-spacing: 0.3pt;
+    margin-right: 3pt;
+    margin-bottom: 2pt;
+  }
+
+  /* ========== signal dots ========== */
+  .dot {
+    display: inline-block;
+    width: 8pt; height: 8pt;
+    border-radius: 50%;
+    margin-right: 3pt;
+    vertical-align: middle;
+    position: relative;
+    top: -0.5pt;
+  }
+  .dot.red    { background: #E83A2A; }
+  .dot.yellow { background: #FFB300; }
+  .dot.green  { background: #3CC55B; }
+
+  /* ========== Deploy steps ========== */
+  .steps { counter-reset: step; margin-top: 6pt; }
+  .step {
+    position: relative;
+    padding-left: 22pt;
+    margin-bottom: 9pt;
+    break-inside: avoid;
+  }
+  .step:last-child { margin-bottom: 0; }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: 0; top: -0.5pt;
+    width: 15pt; height: 15pt;
+    background: var(--brand);
+    color: #fff;
+    font-size: 9pt;
+    font-weight: 500;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 15pt;
+  }
+  .step-head { font-size: 10.5pt; font-weight: 500; color: var(--near-black); margin-bottom: 2pt; }
+  .step-body { font-size: 9.5pt; color: var(--olive); line-height: 1.5; }
+  .code {
+    display: block;
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 9pt;
+    color: var(--near-black);
+    background: var(--ivory);
+    border: 0.3pt solid var(--border);
+    border-radius: 4pt;
+    padding: 5pt 8pt;
+    margin-top: 4pt;
+    letter-spacing: 0;
+  }
+  .code .cmt { color: var(--stone); }
+  code.inline {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 9pt;
+    color: var(--brand);
+    background: var(--tag-bg);
+    padding: 0 4pt;
+    border-radius: 3pt;
+  }
+
+  /* ========== Tabs (code viewer) ========== */
+  .tabs-bar {
+    display: flex;
+    gap: 2pt;
+    border-bottom: 0.6pt solid var(--border);
+    margin-top: 6pt;
+  }
+  .tab-btn {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 9pt;
+    color: var(--stone);
+    background: transparent;
+    border: none;
+    border-bottom: 1.5pt solid transparent;
+    padding: 5pt 10pt;
+    margin-bottom: -0.6pt;
+    cursor: pointer;
+    letter-spacing: 0;
+  }
+  .tab-btn:hover { color: var(--dark-warm); }
+  .tab-btn.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 500; }
+  .tab-panel {
+    background: var(--ivory);
+    border: 0.3pt solid var(--border);
+    border-top: none;
+    border-radius: 0 0 4pt 4pt;
+    margin: 0;
+    max-height: 360px;
+    overflow: auto;
+  }
+  .tab-panel pre {
+    margin: 0;
+    padding: 8pt 10pt;
+    white-space: pre;
+    tab-size: 2;
+  }
+  .tab-panel code {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 8.5pt;
+    line-height: 1.55;
+    color: var(--near-black);
+    letter-spacing: 0;
+    background: transparent;
+    padding: 0;
+  }
+  /* highlight.js tokens · kami parchment palette */
+  .hljs-comment, .hljs-quote { color: #9b968a; font-style: italic; }
+  .hljs-keyword, .hljs-literal, .hljs-built_in, .hljs-type { color: #1B365D; }
+  .hljs-string, .hljs-meta-string { color: #5f7a3a; }
+  .hljs-number, .hljs-symbol { color: #9a5b2d; }
+  .hljs-attr, .hljs-property { color: #3d3d3a; }
+  .hljs-title, .hljs-title.function_, .hljs-section { color: #2d5070; }
+  .hljs-meta { color: #8a6d3b; }
+  .hljs-attribute, .hljs-variable, .hljs-template-variable { color: #504e49; }
+  .hljs-punctuation { color: #6b6a64; }
+
+  /* ========== Flow chart ========== */
+  .flow { display: block; margin-top: 6pt; max-width: 100%; }
+
+  /* ========== Directory grid ========== */
+  .dir-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: 4pt;
+    border: 0.3pt solid var(--border);
+    border-radius: 4pt;
+    overflow: hidden;
+  }
+  .dir-item {
+    padding: 7pt 10pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    border-right: 0.3pt solid var(--border-soft);
+  }
+  .dir-item:nth-child(2n) { border-right: none; }
+  .dir-item:nth-last-child(-n+2) { border-bottom: none; }
+  .dir-path {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 9pt;
+    color: var(--brand);
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  .dir-desc {
+    font-size: 9pt;
+    color: var(--olive);
+    margin-top: 2pt;
+    line-height: 1.35;
+  }
+
+  /* ========== Callout ========== */
+  .callout {
+    background: transparent;
+    border-left: 1.8pt solid var(--brand);
+    padding: 4pt 0 4pt 14pt;
+    margin: 10pt 0 0 0;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: var(--olive);
+    break-inside: avoid;
+  }
+  .callout .hl, .callout .em-brand { color: var(--brand); }
+
+  /* ========== FOOTER ========== */
+  .footer {
+    margin-top: 16pt;
+    padding-top: 6pt;
+    border-top: 0.3pt dotted var(--border);
+    font-size: 9pt;
+    color: var(--stone);
+    display: flex;
+    justify-content: space-between;
+    letter-spacing: 0.3pt;
+  }
+  .footer a { color: var(--brand); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div class="header">
+  <div class="title-block">
+    <div class="eyebrow">开源项目 · OPEN SOURCE</div>
+    <h1>Claude 红绿灯 + Mac 系统信息展示</h1>
+    <div class="subtitle">把 Claude Code 的工作状态变成一盏实体红绿灯，顺手在手机上盯住 Mac 的性能与风扇。</div>
+    <div class="stack">
+      <span class="tag">Rust</span><span class="tag">Flutter</span><span class="tag">Node</span><span class="tag">Hono</span><span class="tag">Vue</span>
+    </div>
+  </div>
+  <div class="meta">
+    Flutter · Hono · Rust<br>
+    iOS / macOS<br>
+    MIT
+  </div>
+</div>
+
+<!-- ========== 简介 ========== -->
+<section>
+  <h2>简介</h2>
+  <p class="lead" style="margin-bottom:0">
+    Claude Code 在后台跑长任务时，你很难知道它是<span class="hl">在干活</span>、<span class="hl">卡住要授权</span>、还是<span class="hl">已经做完</span>。本项目用一盏看得见的红绿灯把这件事实体化：Agent 通过 hook 上报灯语，服务端聚合后经 WebSocket 实时推到手机和 Web 控制台；同一条通道还顺带把 Mac 的 CPU / GPU / 功耗 / 风扇喂给手机展示。
+  </p>
+</section>
+
+<!-- ========== 四个子模块（两栏） ========== -->
+<div class="two-col">
+  <section>
+    <div class="mod-head"><h2>移动端</h2><span class="mod-path">./iapp</span></div>
+    <p>Flutter（iOS）。红绿灯页用 GLSL 三盏灯呈现状态，另有 Mac 系统信息页（风扇 / 地球等 shader 动效）。</p>
+    <ul class="dash">
+      <li><span class="dot green"></span>绿灯常亮 = 空闲 / 正在工作</li>
+      <li><span class="dot yellow"></span>黄灯慢闪 = 需要关注</li>
+      <li><span class="dot red"></span>红灯快闪 = 阻塞 / 等授权</li>
+      <li>WebSocket 直连服务端，状态即时刷新</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="mod-head"><h2>后端 + 控制台</h2><span class="mod-path">./iapp/server</span></div>
+    <p>Hono API + Vue 3 SPA，<span class="hl">pkg 打包成单个可执行文件</span>，pm2 一键启动（端口 4600）。</p>
+    <ul class="dash">
+      <li><code>/api/signal-light/state</code> 收 Claude hook 上报</li>
+      <li>多会话灯语聚合，最危险的状态优先</li>
+      <li>WebSocket 广播到手机与控制台</li>
+      <li>控制台在 <span class="mod-path">src/client/</span>，shadcn-vue + Tailwind v4</li>
+    </ul>
+  </section>
+</div>
+
+<section>
+  <div class="mod-head"><h2>数据采集</h2><span class="mod-path">./macmon</span></div>
+  <p>基于 <span class="hl">vladkens/macmon</span> 的最新版本修改，新增<span class="hl">风扇转速统计</span>。Rust 编写，借私有 macOS API 免 root 读取 Apple Silicon 的实时性能数据。</p>
+  <div style="margin-top:4pt">
+    <span class="tag">CPU / GPU 占用</span><span class="tag">功耗</span><span class="tag">温度</span><span class="tag">内存</span><span class="tag">风扇 RPM</span><span class="tag">sudoless</span>
+  </div>
+</section>
+
+<!-- ========== 基础环境准备 ========== -->
+<section>
+  <h2>基础环境准备<span class="sub">各模块所需工具链版本</span></h2>
+  <table class="env-table">
+    <thead>
+      <tr><th>工具</th><th>版本</th><th>用途</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="env-tool">Flutter</td>
+        <td><span class="ver">3.41.6 · stable</span></td>
+        <td class="env-note">移动端 <span class="mod-path">./iapp</span>，内含 Dart 3.11.4</td>
+      </tr>
+      <tr>
+        <td class="env-tool">Node.js</td>
+        <td><span class="ver">v25.8.0</span></td>
+        <td class="env-note">后端 + Vue 控制台 <span class="mod-path">./iapp/server</span></td>
+      </tr>
+      <tr>
+        <td class="env-tool">pm2</td>
+        <td><span class="ver">5.2.0</span></td>
+        <td class="env-note">后端进程守护 / 热重载（端口 4600）</td>
+      </tr>
+      <tr>
+        <td class="env-tool">Rust</td>
+        <td><span class="ver">1.91.1</span></td>
+        <td class="env-note">数据采集 <span class="mod-path">./macmon</span>（cargo 构建）</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 数据流 ========== -->
+<section>
+  <h2>数据流<span class="sub">从一次 hook 到一盏亮起的灯</span></h2>
+  <svg class="flow" width="100%" viewBox="0 0 680 222" xmlns="http://www.w3.org/2000/svg" font-family="'TsangerJinKai02','Source Han Serif SC',Georgia,serif">
+    <defs>
+      <marker id="fl-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6a64" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+
+    <!-- Box A · Claude hook -->
+    <g>
+      <rect x="36" y="44" width="168" height="58" rx="8" fill="#EAEFF6" stroke="#1B365D" stroke-width="0.9"/>
+      <text x="120" y="69" text-anchor="middle" font-size="13" font-weight="500" fill="#141413">Claude Code</text>
+      <text x="120" y="88" text-anchor="middle" font-size="10.5" fill="#504e49">hook 上报事件</text>
+    </g>
+
+    <!-- A → B -->
+    <text x="230" y="64" text-anchor="middle" font-size="10" fill="#504e49">灯语事件</text>
+    <line x1="204" y1="73" x2="252" y2="73" stroke="#6b6a64" stroke-width="1.2" marker-end="url(#fl-arrow)"/>
+
+    <!-- Box B · 服务端聚合（核心） -->
+    <g>
+      <rect x="256" y="44" width="168" height="58" rx="8" fill="#E4ECF5" stroke="#1B365D" stroke-width="1.4"/>
+      <text x="340" y="69" text-anchor="middle" font-size="13" font-weight="500" fill="#141413">服务端 · 聚合裁决</text>
+      <text x="340" y="88" text-anchor="middle" font-size="10.5" fill="#1B365D" font-weight="500">红 &gt; 黄 &gt; 绿</text>
+    </g>
+
+    <!-- B → C -->
+    <text x="450" y="64" text-anchor="middle" font-size="10" fill="#504e49">WebSocket 广播</text>
+    <line x1="424" y1="73" x2="472" y2="73" stroke="#6b6a64" stroke-width="1.2" marker-end="url(#fl-arrow)"/>
+
+    <!-- Box C · 端 -->
+    <g>
+      <rect x="476" y="44" width="168" height="58" rx="8" fill="#E8F3EC" stroke="#3CC55B" stroke-width="0.9"/>
+      <text x="560" y="69" text-anchor="middle" font-size="13" font-weight="500" fill="#141413">手机 + 控制台</text>
+      <text x="560" y="88" text-anchor="middle" font-size="10.5" fill="#504e49">红绿灯亮 / 系统信息</text>
+    </g>
+
+    <!-- D → B (支线) -->
+    <text x="350" y="132" text-anchor="start" font-size="10" fill="#504e49">Mac 指标</text>
+    <line x1="340" y1="158" x2="340" y2="106" stroke="#6b6a64" stroke-width="1.2" marker-end="url(#fl-arrow)"/>
+
+    <!-- Box D · macmon -->
+    <g>
+      <rect x="256" y="158" width="168" height="52" rx="8" fill="#F4EFE3" stroke="#9a8e6f" stroke-width="0.9"/>
+      <text x="340" y="181" text-anchor="middle" font-size="13" font-weight="500" fill="#141413">macmon 采集</text>
+      <text x="340" y="199" text-anchor="middle" font-size="10.5" fill="#504e49">CPU · GPU · 功耗 · 风扇</text>
+    </g>
+  </svg>
+</section>
+
+<!-- ========== Hooks 配置 ========== -->
+<section>
+  <h2>Hooks 配置<span class="sub">让 Claude Code 把状态喂给红绿灯</span></h2>
+  <p>找到 Claude 的 <code class="inline">settings.json</code>，加入下面的 <code class="inline">hooks</code> 配置；它在各生命周期事件触发 <code class="inline">signal_light_hook.js</code>，由脚本上报灯语到后端。</p>
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="settings">settings.json</button>
+    <button class="tab-btn" data-tab="hook">signal_light_hook.js</button>
+  </div>
+  <div class="tab-panel"><pre><code id="code-view" class="hljs"></code></pre></div>
+</section>
+
+<!-- ========== 目录速览 ========== -->
+<section>
+  <h2>目录速览</h2>
+  <div class="dir-grid">
+    <div class="dir-item">
+      <div class="dir-path">./iapp</div>
+      <div class="dir-desc">Flutter 移动端</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-path">./iapp/server</div>
+      <div class="dir-desc">Hono 后端</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-path">./iapp/server/src/client</div>
+      <div class="dir-desc">Vue 控制台</div>
+    </div>
+    <div class="dir-item">
+      <div class="dir-path">./macmon</div>
+      <div class="dir-desc">数据采集（含风扇统计）</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 移动端部署 ========== -->
+<section>
+  <h2>移动端部署<span class="sub">iOS 真机安装</span></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-head">配置 API 地址</div>
+      <div class="step-body">
+        打包前先改 <code class="inline">iapp/lib/config.dart</code> 的 <code class="inline">apiBaseUrl</code> 为你的后端地址，WebSocket 地址会据此自动推导（https→wss）。
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-head">make 打包 ipa</div>
+      <div class="step-body">
+        根目录执行，产出未签名安装包 <code class="inline">dist/app.ipa</code>。
+        <span class="code"><span class="cmt"># 默认目标即 unsigned</span><br>make</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-head">签名并安装到设备</div>
+      <div class="step-body">
+        用你的开发证书 / 描述文件对 <code class="inline">dist/app.ipa</code> 重签名，再经 Xcode、Apple Configurator 或 sideload 工具装到 iOS 真机即可。
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="text/plain" id="src-settings">{
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js SessionStart" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js UserPromptSubmit" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js PreToolUse" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js PostToolUse" } ] }
+    ],
+    "Stop": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js Stop" } ] }
+    ],
+    "Notification": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js Notification" } ] }
+    ],
+    "SessionEnd": [
+      { "matcher": "", "hooks": [ { "type": "command", "command": "node /home/claude-user/.claude/scripts/signal_light_hook.js SessionEnd" } ] }
+    ]
+  }
+}</script>
+
+<script type="text/plain" id="src-hook">#!/usr/bin/env node
+/*
+ * Claude Code hook -> iapp signal-light HTTP API
+ * - Read stdin JSON
+ * - Map events to signal names (idle/working/permission/blocked/...)
+ * - POST to backend; backend aggregates and pushes to Flutter via ws
+ * - Only uses /tmp for temp logs; no external dependencies
+ * - All network/parse errors are silent so hook failures never block Claude
+ */
+
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
+
+const EVENT_TO_SIGNAL = {
+  SessionStart: "session_start",
+  UserPromptSubmit: "thinking",
+  PreToolUse: "working",
+  PostToolUse: "tool_done",
+  PreCompact: "working",
+  SubagentStart: "working",
+  SubagentStop: "tool_done",
+  Stop: "turn_end",
+  Notification: "attention",
+  PermissionRequest: "permission",
+  SessionEnd: "session_end",
+};
+
+const STOP_REASON_SIGNAL = {
+  max_tokens: "blocked",
+  error: "blocked",
+};
+
+const API_URL =
+  process.env.SIGNAL_LIGHT_API ||
+  "https://mini-watch.t8s.ink/api/signal-light/state";
+const TIMEOUT = Number.parseFloat(process.env.SIGNAL_LIGHT_TIMEOUT || "2.0");
+const LOG_PATH = "/tmp/signal-light-hook.log";
+
+function log(message) {
+  const debug = (process.env.SIGNAL_LIGHT_DEBUG || "").toLowerCase();
+  if (!["1", "true", "yes"].includes(debug)) {
+    return;
+  }
+
+  try {
+    fs.appendFileSync(LOG_PATH, `${message}\n`, "utf8");
+  } catch {
+    // Ignore logging failures.
+  }
+}
+
+function readStdin() {
+  if (process.stdin.isTTY) {
+    return "";
+  }
+
+  try {
+    return fs.readFileSync(0, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function eventFromArgs(argv) {
+  for (let index = 2; index < argv.length; index += 1) {
+    const value = argv[index];
+    if ((value === "--event" || value === "-e") && index + 1 < argv.length) {
+      return argv[index + 1];
+    }
+    if (value.startsWith("--event=")) {
+      return value.slice("--event=".length);
+    }
+  }
+
+  if (argv.length >= 3 && !argv[2].startsWith("-")) {
+    return argv[2];
+  }
+  return null;
+}
+
+function chooseSignal(event, payload) {
+  const explicit = payload.signal || payload.signal_name;
+  if (typeof explicit === "string" && explicit.trim()) {
+    return explicit.trim().toLowerCase();
+  }
+
+  if (event === "Stop") {
+    const reason = payload.stop_reason;
+    if (typeof reason === "string" && STOP_REASON_SIGNAL[reason]) {
+      return STOP_REASON_SIGNAL[reason];
+    }
+  }
+
+  return EVENT_TO_SIGNAL[event] || "attention";
+}
+
+function sessionKey(payload) {
+  const sid = payload.session_id;
+  if (typeof sid === "string" && sid.trim()) {
+    return sid.trim();
+  }
+
+  for (const key of ["CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID"]) {
+    const value = process.env[key];
+    if (value) {
+      return value.trim();
+    }
+  }
+
+  const cwd = payload.cwd;
+  if (typeof cwd === "string" && cwd.trim()) {
+    return `cwd:${cwd.trim()}`;
+  }
+
+  return "global";
+}
+
+function postJson(urlString, body) {
+  return new Promise((resolve) => {
+    let url;
+    try {
+      url = new URL(urlString);
+    } catch (error) {
+      log(`   error: ${error.message}`);
+      resolve();
+      return;
+    }
+
+    const data = Buffer.from(JSON.stringify(body), "utf8");
+    const client = url.protocol === "https:" ? https : http;
+    const timeoutMs = Number.isFinite(TIMEOUT) ? Math.max(0, TIMEOUT * 1000) : 2000;
+
+    const request = client.request(
+      {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port,
+        path: `${url.pathname}${url.search}`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": data.length,
+        },
+        timeout: timeoutMs,
+      },
+      (response) => {
+        response.resume();
+        response.on("end", resolve);
+      },
+    );
+
+    request.on("timeout", () => {
+      request.destroy(new Error("request timed out"));
+    });
+    request.on("error", (error) => {
+      log(`   error: ${error.message}`);
+      resolve();
+    });
+    request.end(data);
+  });
+}
+
+async function main() {
+  const stdinText = readStdin();
+  let payload = {};
+
+  if (stdinText.trim()) {
+    try {
+      const parsed = JSON.parse(stdinText);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        payload = parsed;
+      }
+    } catch {
+      payload = { raw: stdinText };
+    }
+  }
+
+  const event =
+    eventFromArgs(process.argv) ||
+    payload.hook_event_name ||
+    payload.event ||
+    "Stop";
+  const signal = chooseSignal(event, payload);
+  const sid = sessionKey(payload);
+
+  const body = {
+    signal,
+    session_id: sid,
+    event,
+    cwd: payload.cwd,
+  };
+
+  log(`-> ${event} / ${signal} / ${sid}`);
+  await postJson(API_URL, body);
+  return 0;
+}
+
+main()
+  .then((code) => {
+    process.exitCode = code;
+  })
+  .catch((error) => {
+    log(`   error: ${error && error.message ? error.message : String(error)}`);
+    process.exitCode = 0;
+  });</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+  (function () {
+    var view = document.getElementById("code-view");
+    var sources = {
+      settings: { code: document.getElementById("src-settings").textContent, lang: "json" },
+      hook: { code: document.getElementById("src-hook").textContent, lang: "javascript" },
+    };
+    var btns = document.querySelectorAll(".tab-btn");
+    var current = "settings";
+    function render(tab) {
+      var src = sources[tab];
+      if (window.hljs) {
+        view.innerHTML = hljs.highlight(src.code, { language: src.lang }).value;
+      } else {
+        view.textContent = src.code;
+      }
+    }
+    function show(tab) {
+      current = tab;
+      render(tab);
+      btns.forEach(function (b) {
+        b.classList.toggle("active", b.dataset.tab === tab);
+      });
+    }
+    btns.forEach(function (b) {
+      b.addEventListener("click", function () { show(b.dataset.tab); });
+    });
+    show("settings");
+    // highlight.js 异步加载完成后重渲染当前面板
+    window.addEventListener("load", function () { render(current); });
+  })();
+</script>
+
+</body>
+</html>
